@@ -22,7 +22,7 @@ type PriceFilter = 'all' | 'free' | 'paid';
     <div class="ms-container browse">
       <header class="browse__head">
         <h1 class="browse__title">Browse MealSets</h1>
-        <p class="browse__sub">Chef-built meal packs, ready for your notebook.</p>
+        <p class="browse__sub">Chef-built, focused meals in 5-packs, ready for you to prepare. One-click download to your RegiMenu Notebook, and start planning!</p>
       </header>
 
       <!-- Price filter: conspicuous segmented control (client-side) -->

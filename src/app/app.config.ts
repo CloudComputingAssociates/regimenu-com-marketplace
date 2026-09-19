@@ -25,13 +25,25 @@ export const appConfig: ApplicationConfig = {
       useRefreshTokens: true,
       cacheLocation: 'localstorage',
       httpInterceptor: {
-        // Attach the JWT to every API call *if the user is authenticated*, and
-        // let the request through untouched if they are not. This is what keeps
-        // the PUBLIC catalog call working for anonymous visitors — the
-        // interceptor never forces a login, it only decorates when a token
-        // already exists. Auth is enforced on the protected routes by the
-        // route guard, not here.
-        allowedList: [`${environment.apiUrl}/*`],
+        // Attach the JWT to every authenticated API call, but NEVER to the
+        // PUBLIC catalog. The catalog needs no token, and routing it through the
+        // interceptor forces a silent token fetch first — so a stale/invalid
+        // cached refresh token (`invalid_grant`, "Unknown or invalid refresh
+        // token") makes the public catalog fail even though it should always
+        // load. `allowAnonymous` can't save us here: it only rescues a fixed set
+        // of codes (login_required, missing_refresh_token, …) and invalid_grant
+        // is not one of them. The only safe move is to keep the catalog out of
+        // the interceptor entirely, which the uriMatcher does by matching every
+        // API url EXCEPT the catalog path. Auth on protected routes is enforced
+        // by the route guard, not here.
+        allowedList: [
+          {
+            uriMatcher: uri =>
+              uri.startsWith(`${environment.apiUrl}/`) &&
+              !uri.startsWith(`${environment.apiUrl}/mealset/catalog`),
+            allowAnonymous: true,
+          },
+        ],
       },
     }),
   ],
