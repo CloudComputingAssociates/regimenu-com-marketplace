@@ -243,7 +243,7 @@ export class BrowseComponent {
   private handleCartError(err: unknown): void {
     this.busyId.set(null);
     if (err instanceof HttpErrorResponse && err.status === 409) {
-      this.svc.loadEntitled().subscribe({ error: () => {} });
+      this.svc.loadEntitled(true).subscribe({ error: () => {} });
     }
   }
 

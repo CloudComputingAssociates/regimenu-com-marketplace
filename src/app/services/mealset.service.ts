@@ -120,15 +120,33 @@ export class MealSetService {
   readonly entitledLoaded = this._entitledLoaded.asReadonly();
   readonly entitledIds = computed(() => new Set(this._entitled().map(s => s.mealSetId)));
 
+  /** In-flight shared request so concurrent warmers (the app shell + a page both
+   *  hydrating on the same login) collapse into ONE fetch and ONE silent-token
+   *  acquisition. Fewer simultaneous refresh-token grants is also kinder to
+   *  Auth0 refresh-token rotation. Mirrors the catalog store above. */
+  private entitled$?: Observable<MealSetSummary[]>;
+
   /** GET /api/mealset — the caller's owned sets, newest purchase first. Only
-   *  call when authenticated. */
-  loadEntitled(): Observable<MealSetSummary[]> {
-    return this.http.get<MealSetSummary[]>(this.baseUrl).pipe(
+   *  call when authenticated. Cached + de-duped; pass `force` to refetch after an
+   *  acquire/checkout changes ownership. */
+  loadEntitled(force = false): Observable<MealSetSummary[]> {
+    if (this._entitledLoaded() && !force) {
+      return of(this._entitled());
+    }
+    if (this.entitled$ && !force) {
+      return this.entitled$;
+    }
+    this.entitled$ = this.http.get<MealSetSummary[]>(this.baseUrl).pipe(
       tap(sets => {
         this._entitled.set(sets ?? []);
         this._entitledLoaded.set(true);
       }),
+      finalize(() => {
+        this.entitled$ = undefined;
+      }),
+      shareReplay(1),
     );
+    return this.entitled$;
   }
 
   /** GET /api/mealset/{id}/owned — authoritative single-set ownership check. */

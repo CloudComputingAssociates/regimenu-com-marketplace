@@ -71,6 +71,10 @@ export class AppComponent {
    *  "no SSO session" failure from unrelated Auth0 errors. */
   private static readonly CONNECT_FLAG = 'ms.connect';
 
+  /** One-shot latch so a burst of concurrent invalid_grant failures purges the
+   *  poisoned session exactly once (avoids double logout/login redirects). */
+  private recovering = false;
+
   readonly isAuthenticated = toSignal(this.auth.isAuthenticated$, { initialValue: false });
   readonly signupUrl = environment.signupUrl;
 
@@ -112,14 +116,39 @@ export class AppComponent {
       });
     }
 
-    // prompt=none returns `login_required` when there is no tenant SSO session
-    // to adopt (regi-app never established one, or it expired). The error lands
-    // on the return leg, handled by the SDK, and surfaces here — fall back to a
-    // normal interactive login so the user can still sign in.
+    // The SDK surfaces token-acquisition failures on error$. Two classes matter:
     this.auth.error$.subscribe(err => {
-      if (!sessionStorage.getItem(AppComponent.CONNECT_FLAG)) return;
       const code = (err as { error?: string } | undefined)?.error ?? '';
-      if (/login_required|interaction_required|consent_required/.test(code)) {
+      const connecting = !!sessionStorage.getItem(AppComponent.CONNECT_FLAG);
+
+      // 1. A DEAD refresh token (`invalid_grant`, "Unknown or invalid refresh
+      //    token"). With useRefreshTokens + localstorage the SDK caches the RT
+      //    across reloads, and invalid_grant is NOT in its rescuable set, so once
+      //    the token is revoked/rotated/expired it fails every authenticated call
+      //    on every reload — permanently wedging the app (and, before the catalog
+      //    was pulled out of the interceptor, taking the public catalog with it).
+      //    The SDK can't self-recover, so purge the poisoned session ourselves: a
+      //    local-only logout (openUrl:false — clears the cache, no redirect) drops
+      //    us to a clean anonymous state where the public catalog works and the
+      //    user can log in again deliberately. Guarded so a burst of concurrent
+      //    failures heals exactly once.
+      if (code === 'invalid_grant') {
+        if (this.recovering) return;
+        this.recovering = true;
+        sessionStorage.removeItem(AppComponent.CONNECT_FLAG);
+        this.auth.logout({ openUrl: false });
+        // Arrived via cross-app hand-off → the user expected to be signed in, so
+        // send them through a real login now that the stale token is cleared.
+        if (connecting) {
+          this.auth.loginWithRedirect({ appState: { target: '/' } });
+        }
+        return;
+      }
+
+      // 2. prompt=none found no tenant SSO session to adopt (`login_required` et
+      //    al.) during a ?connect reconcile — fall back to a normal interactive
+      //    login so the user can still sign in.
+      if (connecting && /login_required|interaction_required|consent_required/.test(code)) {
         sessionStorage.removeItem(AppComponent.CONNECT_FLAG);
         this.auth.loginWithRedirect({ appState: { target: '/' } });
       }
