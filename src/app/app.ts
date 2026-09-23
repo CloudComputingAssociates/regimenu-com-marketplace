@@ -71,9 +71,15 @@ export class AppComponent {
    *  "no SSO session" failure from unrelated Auth0 errors. */
   private static readonly CONNECT_FLAG = 'ms.connect';
 
-  /** One-shot latch so a burst of concurrent invalid_grant failures purges the
-   *  poisoned session exactly once (avoids double logout/login redirects). */
+  /** One-shot in-memory latch so a burst of concurrent invalid_grant failures in
+   *  a single page load triggers exactly one purge+redirect. */
   private recovering = false;
+
+  /** Loop guard that SURVIVES the heal redirect (the in-memory latch resets on
+   *  reload): a timestamp written just before the redirect, plus its window. If
+   *  invalid_grant recurs within the window, re-auth isn't helping — stop. */
+  private static readonly HEAL_MARKER = 'rm_rt_heal_at';
+  private static readonly HEAL_WINDOW_MS = 60_000;
 
   readonly isAuthenticated = toSignal(this.auth.isAuthenticated$, { initialValue: false });
   readonly signupUrl = environment.signupUrl;
@@ -122,26 +128,11 @@ export class AppComponent {
       const connecting = !!sessionStorage.getItem(AppComponent.CONNECT_FLAG);
 
       // 1. A DEAD refresh token (`invalid_grant`, "Unknown or invalid refresh
-      //    token"). With useRefreshTokens + localstorage the SDK caches the RT
-      //    across reloads, and invalid_grant is NOT in its rescuable set, so once
-      //    the token is revoked/rotated/expired it fails every authenticated call
-      //    on every reload — permanently wedging the app (and, before the catalog
-      //    was pulled out of the interceptor, taking the public catalog with it).
-      //    The SDK can't self-recover, so purge the poisoned session ourselves: a
-      //    local-only logout (openUrl:false — clears the cache, no redirect) drops
-      //    us to a clean anonymous state where the public catalog works and the
-      //    user can log in again deliberately. Guarded so a burst of concurrent
-      //    failures heals exactly once.
+      //    token"): cached in localstorage, not in the SDK's rescuable set, so it
+      //    fails every authenticated call on every reload. Silently swap it for a
+      //    fresh token rather than dropping the user to a logged-out state.
       if (code === 'invalid_grant') {
-        if (this.recovering) return;
-        this.recovering = true;
-        sessionStorage.removeItem(AppComponent.CONNECT_FLAG);
-        this.auth.logout({ openUrl: false });
-        // Arrived via cross-app hand-off → the user expected to be signed in, so
-        // send them through a real login now that the stale token is cleared.
-        if (connecting) {
-          this.auth.loginWithRedirect({ appState: { target: '/' } });
-        }
+        this.healDeadRefreshToken();
         return;
       }
 
@@ -152,6 +143,17 @@ export class AppComponent {
         sessionStorage.removeItem(AppComponent.CONNECT_FLAG);
         this.auth.loginWithRedirect({ appState: { target: '/' } });
       }
+    });
+
+    // After a heal round-trip lands us back authenticated, confirm a token is
+    // genuinely obtainable and clear the loop-guard marker so a FUTURE dead token
+    // can heal (the window guard won't wrongly suppress it). A failure here just
+    // re-enters healDeadRefreshToken via error$, where the window guard applies.
+    this.auth.isAuthenticated$.pipe(filter(Boolean), take(1)).subscribe(() => {
+      this.auth.getAccessTokenSilently().subscribe({
+        next: () => sessionStorage.removeItem(AppComponent.HEAL_MARKER),
+        error: () => {},
+      });
     });
 
     // Warm the entitled list once when authenticated so the nav knows whether
@@ -171,5 +173,62 @@ export class AppComponent {
 
   logout(): void {
     this.auth.logout({ logoutParams: { returnTo: window.location.origin } });
+  }
+
+  /**
+   * Recover from a dead cached refresh token (`invalid_grant`) WITHOUT leaving
+   * the user logged out. Purge the poisoned token locally, then ALWAYS bounce
+   * through /authorize to mint a fresh one. No prompt override: if the tenant SSO
+   * cookie is still alive Auth0 returns a token with zero UI (the user stays
+   * signed in and lands back where they were); only a truly absent session shows
+   * the login screen.
+   *
+   * Two-layer loop protection: the in-memory `recovering` latch collapses a burst
+   * of parallel failures in one page load into a single purge+redirect, and the
+   * sessionStorage HEAL_MARKER survives the redirect — if invalid_grant recurs
+   * within HEAL_WINDOW_MS, re-auth clearly isn't helping, so we stay anonymous
+   * and warn instead of looping.
+   */
+  private healDeadRefreshToken(): void {
+    if (this.recovering) return;
+    this.recovering = true;
+    sessionStorage.removeItem(AppComponent.CONNECT_FLAG);
+
+    const target = AppComponent.cleanTarget();
+    const healedAt = Number(sessionStorage.getItem(AppComponent.HEAL_MARKER) ?? 0);
+    const looping = healedAt > 0 && Date.now() - healedAt < AppComponent.HEAL_WINDOW_MS;
+
+    // Purge locally first (openUrl:false — clears the cache, no redirect), and
+    // only redirect once the purge has COMPLETED, so the logout can't wipe the
+    // fresh login transaction loginWithRedirect is about to create.
+    this.auth.logout({ openUrl: false }).subscribe({
+      complete: () => this.afterPurge(looping, target),
+      error: () => this.afterPurge(looping, target),
+    });
+  }
+
+  private afterPurge(looping: boolean, target: string): void {
+    if (looping) {
+      console.warn(
+        '[auth] invalid_grant recurred within 60s of a heal attempt — staying ' +
+          'anonymous to avoid a redirect loop.',
+      );
+      return; // the purge above already dropped us to a clean anonymous state
+    }
+    // Marker written immediately before the redirect so the guard survives it.
+    sessionStorage.setItem(AppComponent.HEAL_MARKER, String(Date.now()));
+    this.auth.loginWithRedirect({ appState: { target } });
+  }
+
+  /** Current path+query for the post-heal return, minus transient connect/OAuth
+   *  callback params so we never bounce back into ?connect or the /authorize
+   *  callback. */
+  private static cleanTarget(): string {
+    const url = new URL(window.location.href);
+    for (const p of ['connect', 'login_hint', 'code', 'state', 'error', 'error_description', 'iss']) {
+      url.searchParams.delete(p);
+    }
+    const qs = url.searchParams.toString();
+    return url.pathname + (qs ? `?${qs}` : '');
   }
 }

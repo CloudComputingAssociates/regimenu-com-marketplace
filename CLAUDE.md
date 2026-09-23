@@ -12,6 +12,8 @@ conventions.
 
 ## Commit conventions
 
+- NEVER run `git commit` (or `git push`). The user does all committing. Only
+  make the changes and hand over the commit message; never commit them yourself.
 - Terse commit messages. A one-line subject; a short body only when it adds
   something the subject can't. No novels.
 - Do NOT add a `Co-Authored-By` trailer.
