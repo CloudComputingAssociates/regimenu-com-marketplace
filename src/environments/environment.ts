@@ -9,7 +9,7 @@ export const environment = {
   production: false,
   apiUrl: 'FILL_ME', // e.g. https://api.regimenu.net/api
   auth0: {
-    domain: 'FILL_ME',   // e.g. dev-xxxx.us.auth0.com
+    domain: 'login.regimenu.com', // Auth0 custom domain (same tenant as regi-app)
     clientId: 'FILL_ME', // Auth0 SPA application client id (same app as regi-app)
     audience: 'FILL_ME', // e.g. https://api.regimenu.net
   },
