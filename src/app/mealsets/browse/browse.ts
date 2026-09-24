@@ -1,15 +1,15 @@
 // src/app/pages/browse/browse.ts
 // The full public catalog grid with genre multi-select + Free/Paid filters.
 // Owned sets are shown too, badged ✓ Owned with a disabled Add-to-Cart (they
-// also appear on the "My MealSets" shelf at `/`). Welcoming for anonymous.
+// also appear on the "My MealSets" shelf atop /mealsets). Welcoming for anonymous.
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '@auth0/auth0-angular';
-import { MealSetService } from '../../services/mealset.service';
-import { MealSetCatalogEntry } from '../../models/mealset.models';
-import { MealPlaceholderComponent } from '../../components/meal-placeholder/meal-placeholder';
+import { MealSetService } from '../mealset.service';
+import { MealSetCatalogEntry } from '../mealset.models';
+import { MealPlaceholderComponent } from '../meal-placeholder/meal-placeholder';
 
 type PriceFilter = 'all' | 'free' | 'paid';
 
@@ -72,7 +72,7 @@ type PriceFilter = 'all' | 'free' | 'paid';
         <div class="grid">
           @for (entry of visible(); track entry.mealSetId) {
             <div class="card">
-              <a class="card__link" [routerLink]="['/set', entry.mealSetId]">
+              <a class="card__link" [routerLink]="['/mealsets/set', entry.mealSetId]">
                 <div class="card__media">
                   @if (entry.mealSetPic1) {
                     <img class="card__img" [src]="entry.mealSetPic1" [alt]="entry.name" loading="lazy" />
@@ -210,7 +210,7 @@ export class BrowseComponent {
     if (this.isOwned(e.mealSetId) || this.busyId() !== null) return;
 
     if (!this.isAuthenticated()) {
-      this.auth.loginWithRedirect({ appState: { target: `/set/${e.mealSetId}` } });
+      this.auth.loginWithRedirect({ appState: { target: `/mealsets/set/${e.mealSetId}` } });
       return;
     }
 
@@ -219,7 +219,7 @@ export class BrowseComponent {
       this.svc.acquire(e.mealSetId).subscribe({
         next: () => {
           this.busyId.set(null);
-          void this.router.navigate(['/purchase/pending'], {
+          void this.router.navigate(['/mealsets/purchase/pending'], {
             queryParams: { setId: e.mealSetId },
           });
         },

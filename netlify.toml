@@ -1,10 +1,33 @@
-# Netlify build & hosting for the public MealSets marketplace SPA.
+# Netlify build & hosting for the RegiMenu Marketplace SPA.
 [build]
   command = "npm ci && ng build"
-  publish = "dist/regi-mealsets/browser"
+  publish = "dist/regi-marketplace/browser"
+
+# Legacy MealSets paths (pre-marketplace, when the catalog lived at the root)
+# now live under /mealsets. Redirect the old deep links permanently. These must
+# precede the SPA fallback so they win.
+[[redirects]]
+  from = "/browse"
+  to = "/mealsets"
+  status = 301
+
+[[redirects]]
+  from = "/browse/*"
+  to = "/mealsets"
+  status = 301
+
+[[redirects]]
+  from = "/set/*"
+  to = "/mealsets/set/:splat"
+  status = 301
+
+[[redirects]]
+  from = "/purchase/*"
+  to = "/mealsets/purchase/:splat"
+  status = 301
 
 # Single-page-app fallback: every unmatched path serves index.html so the
-# Angular router (client-side) can resolve deep links like /set/42.
+# Angular router (client-side) can resolve deep links like /mealsets/set/42.
 [[redirects]]
   from = "/*"
   to = "/index.html"

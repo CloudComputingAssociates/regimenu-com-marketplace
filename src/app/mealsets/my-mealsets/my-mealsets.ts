@@ -6,8 +6,8 @@
 // already loaded by the host (Home); it loads the catalog itself (cached).
 import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MealSetService } from '../../services/mealset.service';
-import { MealSetCatalogEntry, MealSetSummary } from '../../models/mealset.models';
+import { MealSetService } from '../mealset.service';
+import { MealSetCatalogEntry, MealSetSummary } from '../mealset.models';
 import { MealPlaceholderComponent } from '../meal-placeholder/meal-placeholder';
 
 interface ShelfItem {
@@ -23,7 +23,7 @@ interface ShelfItem {
   template: `
     <div class="grid">
       @for (item of shelf(); track item.summary.mealSetId) {
-        <a class="card card--shelf" [routerLink]="['/set', item.summary.mealSetId]">
+        <a class="card card--shelf" [routerLink]="['/mealsets/set', item.summary.mealSetId]">
           <div class="card__media">
             @if (item.entry?.mealSetPic1; as pic) {
               <img class="card__img" [src]="pic" [alt]="cardName(item)" loading="lazy" />

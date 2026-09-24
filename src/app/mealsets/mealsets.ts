@@ -1,39 +1,35 @@
-// src/app/pages/home/home.ts
-// State-dependent landing at `/`:
-//   - anonymous, OR authenticated with zero owned sets → LandingComponent pitch
-//   - authenticated with ≥1 owned set → shelf view (slim browse band + My MealSets)
-// While auth/entitled resolve, render a blank placeholder — never flash the
-// pitch and then swap it out from under an owner.
+// src/app/mealsets/mealsets.ts
+// The MealSets section page at /mealsets: a state-dependent intro atop the
+// catalog.
+//   - anonymous, OR authenticated with zero owned sets → the MealSets explainer
+//   - authenticated with ≥1 owned set → "Hungry for new ideas?" band + My MealSets shelf
+// The catalog (BrowseComponent) always renders below the intro. While auth /
+// entitlements resolve, the intro is blank — never flash the explainer and then
+// swap in the shelf from under an owner.
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
 import { AuthService } from '@auth0/auth0-angular';
-import { MealSetService } from '../../services/mealset.service';
-import { LandingComponent } from '../landing/landing';
-import { MyMealsetsComponent } from '../../components/my-mealsets/my-mealsets';
+import { MealSetService } from './mealset.service';
+import { LandingComponent } from './landing/landing';
+import { MyMealsetsComponent } from './my-mealsets/my-mealsets';
+import { BrowseComponent } from './browse/browse';
 
 @Component({
-  selector: 'app-home',
+  selector: 'app-mealsets',
   standalone: true,
-  imports: [RouterLink, LandingComponent, MyMealsetsComponent],
+  imports: [LandingComponent, MyMealsetsComponent, BrowseComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @switch (view()) {
-      @case ('pitch') {
-        <app-landing />
-      }
       @case ('shelf') {
-        <div class="ms-container home">
+        <div class="ms-container mealsets-intro">
           <!-- Slim salesy band — not a hero; the shelf is the star. -->
           <section class="band">
-            <div class="band__copy">
-              <h1 class="band__title">Hungry for new ideas?</h1>
-              <p class="band__sub">
-                Fresh, healthy mealsets from coaches, authors, chefs and Registered
-                Dieticians - ready to use, today!
-              </p>
-            </div>
-            <a routerLink="/browse" class="ms-btn ms-btn--primary band__cta">Browse MealSets</a>
+            <h1 class="band__title">Hungry for new ideas?</h1>
+            <p class="band__sub">
+              Fresh, healthy mealsets from coaches, authors, chefs and Registered
+              Dieticians - ready to use, today!
+            </p>
           </section>
 
           <section class="my">
@@ -42,15 +38,21 @@ import { MyMealsetsComponent } from '../../components/my-mealsets/my-mealsets';
           </section>
         </div>
       }
+      @case ('explainer') {
+        <app-landing />
+      }
       @default {
-        <!-- Resolving auth/entitlements — intentionally blank, no pitch flash. -->
-        <div class="home-resolving" aria-hidden="true"></div>
+        <!-- Resolving auth/entitlements — intentionally blank, no explainer flash. -->
+        <div class="mealsets-intro--resolving" aria-hidden="true"></div>
       }
     }
+
+    <!-- The catalog is state-independent; it renders for everyone. -->
+    <app-browse />
   `,
-  styleUrl: './home.scss',
+  styleUrl: './mealsets.scss',
 })
-export class HomeComponent {
+export class MealsetsComponent {
   private auth = inject(AuthService);
   private svc = inject(MealSetService);
 
@@ -59,11 +61,11 @@ export class HomeComponent {
   private entitledResolved = signal(false);
   private started = false;
 
-  readonly view = computed<'resolving' | 'pitch' | 'shelf'>(() => {
+  readonly view = computed<'resolving' | 'explainer' | 'shelf'>(() => {
     if (this.authLoading()) return 'resolving';
-    if (!this.isAuthenticated()) return 'pitch';
+    if (!this.isAuthenticated()) return 'explainer';
     if (!this.entitledResolved()) return 'resolving';
-    return this.svc.entitled().length > 0 ? 'shelf' : 'pitch';
+    return this.svc.entitled().length > 0 ? 'shelf' : 'explainer';
   });
 
   constructor() {

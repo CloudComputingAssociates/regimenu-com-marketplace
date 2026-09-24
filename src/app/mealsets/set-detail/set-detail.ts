@@ -15,11 +15,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '@auth0/auth0-angular';
-import { MealSetService } from '../../services/mealset.service';
+import { MealSetService } from '../mealset.service';
 import { NotificationService } from '../../services/notification.service';
-import { MealSetCatalogEntry, Meal } from '../../models/mealset.models';
-import { MealPlaceholderComponent } from '../../components/meal-placeholder/meal-placeholder';
-import { MealListComponent } from '../../components/meal-list/meal-list';
+import { MealSetCatalogEntry, Meal } from '../mealset.models';
+import { MealPlaceholderComponent } from '../meal-placeholder/meal-placeholder';
+import { MealListComponent } from '../meal-list/meal-list';
 
 @Component({
   selector: 'app-set-detail',
@@ -33,10 +33,10 @@ import { MealListComponent } from '../../components/meal-list/meal-list';
       } @else if (!entry()) {
         <div class="state">
           <p>This MealSet could not be found.</p>
-          <a routerLink="/browse" class="ms-btn ms-btn--ghost">Back to browse</a>
+          <a routerLink="/mealsets" class="ms-btn ms-btn--ghost">Back to browse</a>
         </div>
       } @else if (entry(); as e) {
-        <a routerLink="/browse" class="detail__back">← All MealSets</a>
+        <a routerLink="/mealsets" class="detail__back">← All MealSets</a>
 
         <div class="detail__grid">
           <!-- Gallery: pics 1–4 + optional video -->
@@ -310,7 +310,7 @@ export class SetDetailComponent {
       this.svc.acquire(e.mealSetId).subscribe({
         next: () => {
           this.busy.set(false);
-          void this.router.navigate(['/purchase/pending'], {
+          void this.router.navigate(['/mealsets/purchase/pending'], {
             queryParams: { setId: e.mealSetId },
           });
         },
@@ -342,7 +342,7 @@ export class SetDetailComponent {
         this.busy.set(false);
         if (res.materializedCount > 0) {
           this.notify.show(`${res.materializedCount} meals added back to your notebook.`);
-          void this.router.navigate(['/purchase/delivered'], {
+          void this.router.navigate(['/mealsets/purchase/delivered'], {
             queryParams: { setId: e.mealSetId },
           });
         } else {

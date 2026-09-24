@@ -10,8 +10,8 @@ import {
   OnInit,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { MealSetService } from '../../services/mealset.service';
-import { MealSetCatalogEntry } from '../../models/mealset.models';
+import { MealSetService } from '../mealset.service';
+import { MealSetCatalogEntry } from '../mealset.models';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -42,7 +42,7 @@ import { environment } from '../../../environments/environment';
 
         <div class="delivered__cta">
           <a [href]="cockpitUrl" class="ms-btn ms-btn--primary">Open my notebook</a>
-          <a routerLink="/" class="ms-btn ms-btn--ghost">Back to my MealSets</a>
+          <a routerLink="/mealsets" class="ms-btn ms-btn--ghost">Back to my MealSets</a>
         </div>
       </div>
     </div>
@@ -62,7 +62,7 @@ export class PurchaseDeliveredComponent implements OnInit {
   ngOnInit(): void {
     const setId = Number(this.route.snapshot.queryParamMap.get('setId'));
     if (!Number.isFinite(setId)) {
-      void this.router.navigate(['/browse']);
+      void this.router.navigate(['/mealsets']);
       return;
     }
 

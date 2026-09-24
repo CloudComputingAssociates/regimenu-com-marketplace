@@ -1,47 +1,51 @@
 import { Routes } from '@angular/router';
 import { authGuardFn } from '@auth0/auth0-angular';
 
-// Route map for the public MealSets marketplace.
-//  - Public (browsable anonymously): /, /browse, /set/:id
-//  - Auth-required (authGuardFn → login redirect): /purchase/pending, /purchase/delivered
-//  - 404 → /browse
+// Route map for the RegiMenu Marketplace.
+//  - `/`                        marketplace storefront (departments grid)
+//  - `/mealsets`                MealSets section: explainer/shelf intro + catalog
+//  - `/mealsets/set/:id`        per-set detail (public; deep-linkable)
+//  - `/mealsets/purchase/*`     post-purchase flow (auth-required)
+//  - unknown → the storefront
 //
-// The browser tab reads "mealsets.RegiMenu.com" on every route (applied by
+// The browser tab reads "RegiMenu Marketplace" on every route (applied by
 // Angular's built-in TitleStrategy), paired with the RegiMenu logo favicon.
 export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    title: 'mealsets.RegiMenu.com',
-    // State-dependent: pitch for newcomers, "My MealSets" shelf for owners.
-    loadComponent: () => import('./pages/home/home').then(m => m.HomeComponent),
+    title: 'RegiMenu Marketplace',
+    loadComponent: () => import('./home/home').then(m => m.HomeComponent),
   },
   {
-    path: 'browse',
-    title: 'mealsets.RegiMenu.com',
-    loadComponent: () => import('./pages/browse/browse').then(m => m.BrowseComponent),
+    path: 'mealsets',
+    title: 'RegiMenu Marketplace',
+    // State-dependent intro (explainer for newcomers, "My MealSets" shelf for
+    // owners) above the catalog.
+    loadComponent: () => import('./mealsets/mealsets').then(m => m.MealsetsComponent),
   },
   {
-    path: 'set/:id',
-    title: 'mealsets.RegiMenu.com',
-    loadComponent: () => import('./pages/set-detail/set-detail').then(m => m.SetDetailComponent),
-  },
-  {
-    path: 'purchase/pending',
-    canActivate: [authGuardFn],
-    title: 'mealsets.RegiMenu.com',
+    path: 'mealsets/set/:id',
+    title: 'RegiMenu Marketplace',
     loadComponent: () =>
-      import('./pages/purchase-pending/purchase-pending').then(m => m.PurchasePendingComponent),
+      import('./mealsets/set-detail/set-detail').then(m => m.SetDetailComponent),
   },
   {
-    path: 'purchase/delivered',
+    path: 'mealsets/purchase/pending',
     canActivate: [authGuardFn],
-    title: 'mealsets.RegiMenu.com',
+    title: 'RegiMenu Marketplace',
     loadComponent: () =>
-      import('./pages/purchase-delivered/purchase-delivered').then(
+      import('./mealsets/purchase-pending/purchase-pending').then(m => m.PurchasePendingComponent),
+  },
+  {
+    path: 'mealsets/purchase/delivered',
+    canActivate: [authGuardFn],
+    title: 'RegiMenu Marketplace',
+    loadComponent: () =>
+      import('./mealsets/purchase-delivered/purchase-delivered').then(
         m => m.PurchaseDeliveredComponent,
       ),
   },
-  // Unknown paths fall back to the catalog.
-  { path: '**', redirectTo: 'browse' },
+  // Unknown paths fall back to the storefront.
+  { path: '**', redirectTo: '' },
 ];
