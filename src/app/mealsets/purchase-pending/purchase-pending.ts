@@ -11,9 +11,9 @@ import {
   OnDestroy,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MealSetService } from '../../services/mealset.service';
-import { MealSetCatalogEntry } from '../../models/mealset.models';
-import { MealPlaceholderComponent } from '../../components/meal-placeholder/meal-placeholder';
+import { MealSetService } from '../mealset.service';
+import { MealSetCatalogEntry } from '../mealset.models';
+import { MealPlaceholderComponent } from '../meal-placeholder/meal-placeholder';
 import { environment } from '../../../environments/environment';
 
 const POLL_MS = 2000;
@@ -73,7 +73,7 @@ export class PurchasePendingComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.setId = Number(this.route.snapshot.queryParamMap.get('setId'));
     if (!Number.isFinite(this.setId)) {
-      void this.router.navigate(['/browse']);
+      void this.router.navigate(['/mealsets']);
       return;
     }
 
@@ -102,7 +102,7 @@ export class PurchasePendingComponent implements OnInit, OnDestroy {
       next: owned => {
         if (owned) {
           this.clearTimers();
-          void this.router.navigate(['/purchase/delivered'], {
+          void this.router.navigate(['/mealsets/purchase/delivered'], {
             queryParams: { setId: this.setId },
           });
         }

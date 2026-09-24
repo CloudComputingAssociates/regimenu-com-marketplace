@@ -1,8 +1,8 @@
-# regimenu-com-mealsets
+# regimenu-com-marketplace
 
-Public MealSets marketplace SPA (mealsets.regimenu.com). Angular 18+ standalone,
-signals, OnPush, Angular Material, `@auth0/auth0-angular`. Mirrors regi-app
-conventions.
+Public RegiMenu Marketplace SPA. The storefront is at `/`; the MealSets product
+section lives under `/mealsets`. Angular 18+ standalone, signals, OnPush, Angular
+Material, `@auth0/auth0-angular`. Mirrors regi-app conventions.
 
 ## Working style
 

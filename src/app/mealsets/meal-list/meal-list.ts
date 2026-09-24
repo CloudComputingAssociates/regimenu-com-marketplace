@@ -3,7 +3,7 @@
 // description, and a macros row. Fed lean Meal rows from GET /api/meal — every
 // field is optional and rendered defensively.
 import { Component, ChangeDetectionStrategy, input } from '@angular/core';
-import { Meal } from '../../models/mealset.models';
+import { Meal } from '../mealset.models';
 import { MealPlaceholderComponent } from '../meal-placeholder/meal-placeholder';
 
 @Component({

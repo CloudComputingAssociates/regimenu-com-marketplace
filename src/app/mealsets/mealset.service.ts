@@ -22,7 +22,7 @@ import {
   CheckoutResponse,
   RedownloadResponse,
   Meal,
-} from '../models/mealset.models';
+} from './mealset.models';
 
 @Injectable({ providedIn: 'root' })
 export class MealSetService {

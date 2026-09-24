@@ -1,18 +1,16 @@
-// src/app/pages/landing/landing.ts
-// Public landing page — typography-led, one clean screen. Hero + three-step
-// value strip + primary CTA into /browse.
+// src/app/mealsets/landing/landing.ts
+// MealSets explainer — the intro atop /mealsets for newcomers. Typography-led
+// hero headline + paragraph, then a three-step value strip. No CTA: the catalog
+// sits directly below this on the page.
 import { Component, ChangeDetectionStrategy } from '@angular/core';
-import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="hero">
       <div class="ms-container hero__inner">
-        <p class="hero__eyebrow">The RegiMenu marketplace</p>
         <h1 class="hero__title">
           MealSets — chef-built, macro-true<br />meal packs for your RegiMenu notebook.
         </h1>
@@ -20,9 +18,6 @@ import { RouterLink } from '@angular/router';
           Curated packs of real meals with real macros, built by chefs and coaches.
           Add a set to your notebook and it is ready to plan against in seconds.
         </p>
-        <div class="hero__cta">
-          <a routerLink="/browse" class="ms-btn ms-btn--primary hero__btn">Browse MealSets</a>
-        </div>
       </div>
     </section>
 
